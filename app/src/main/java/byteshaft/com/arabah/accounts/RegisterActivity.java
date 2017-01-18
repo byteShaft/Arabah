@@ -10,27 +10,37 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.Toast;
 
+import com.byteshaft.requests.HttpRequest;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.net.HttpURLConnection;
+
 import byteshaft.com.arabah.MainActivity;
 import byteshaft.com.arabah.R;
+import byteshaft.com.arabah.utils.AppGlobals;
+import byteshaft.com.arabah.utils.WebServiceHelpers;
 
 /**
  * Created by husnain on 1/16/17.
  */
 
 public class RegisterActivity extends AppCompatActivity implements GoogleApiClient.ConnectionCallbacks,
-        GoogleApiClient.OnConnectionFailedListener, LocationListener {
+        GoogleApiClient.OnConnectionFailedListener, LocationListener, HttpRequest.OnReadyStateChangeListener, HttpRequest.OnErrorListener {
 
     private Button registerButton;
     private LocationRequest mLocationRequest;
@@ -48,6 +58,8 @@ public class RegisterActivity extends AppCompatActivity implements GoogleApiClie
     private String mMobileNumberString;
     private String mDescriptionString;
     private String mLocationString;
+
+    private HttpRequest request;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -169,8 +181,78 @@ public class RegisterActivity extends AppCompatActivity implements GoogleApiClie
 
     }
 
+    private void registerUser(String username, String password, String email, String phoneNumber) {
+        request = new HttpRequest(getApplicationContext());
+        request.setOnReadyStateChangeListener(this);
+        request.setOnErrorListener(this);
+        request.open("POST", String.format("%suser/register", AppGlobals.BASE_URL));
+        request.send(getRegisterData(username, password, email, phoneNumber));
+        WebServiceHelpers.showProgressDialog(RegisterActivity.this, "Registering User ");
+    }
+
+
+    private String getRegisterData(String username, String password, String email, String phoneNumner) {
+        JSONObject jsonObject = new JSONObject();
+        try {
+            jsonObject.put("full_name", username);
+            jsonObject.put("email", email);
+            jsonObject.put("mobile_number", phoneNumner);
+            jsonObject.put("password", password);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        return jsonObject.toString();
+
+    }
+
     @Override
     public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
+
+    }
+
+    @Override
+    public void onError(HttpRequest request, int readyState, short error, Exception exception) {
+
+    }
+
+    @Override
+    public void onReadyStateChange(HttpRequest request, int readyState) {
+
+        switch (readyState) {
+            case HttpRequest.STATE_DONE:
+                WebServiceHelpers.dismissProgressDialog();
+                Log.i("TAG", "Response " + request.getResponseText());
+                switch (request.getStatus()) {
+                    case HttpRequest.ERROR_NETWORK_UNREACHABLE:
+                        AppGlobals.alertDialog(RegisterActivity.this, "Registration Failed!", "please check your internet connection");
+                        break;
+                    case HttpURLConnection.HTTP_BAD_REQUEST:
+                        AppGlobals.alertDialog(RegisterActivity.this, "Registration Failed!", "Email already in use");
+                        break;
+                    case HttpURLConnection.HTTP_CREATED:
+                        System.out.println(request.getResponseText() + "working ");
+                        Toast.makeText(getApplicationContext(), "Activation code has been sent to you! Please check your Email", Toast.LENGTH_SHORT).show();
+                        try {
+                            JSONObject jsonObject = new JSONObject(request.getResponseText());
+                            System.out.println(jsonObject + "working ");
+                            String username = jsonObject.getString(AppGlobals.KEY_FULL_NAME);
+                            String userId = jsonObject.getString(AppGlobals.KEY_USER_ID);
+                            String email = jsonObject.getString(AppGlobals.KEY_EMAIL);
+                            String phoneNumber = jsonObject.getString(AppGlobals.KEY_PHONE_NUMBER);
+                            //saving values
+                            AppGlobals.saveDataToSharedPreferences(AppGlobals.KEY_FULL_NAME, username);
+                            Log.i("user name", " " + AppGlobals.getStringFromSharedPreferences(AppGlobals.KEY_FULL_NAME));
+                            AppGlobals.saveDataToSharedPreferences(AppGlobals.KEY_EMAIL, email);
+                            AppGlobals.saveDataToSharedPreferences(AppGlobals.KEY_PHONE_NUMBER, phoneNumber);
+                            Log.i("user name", " " + AppGlobals.getStringFromSharedPreferences(AppGlobals.KEY_PHONE_NUMBER));
+                            AppGlobals.saveDataToSharedPreferences(AppGlobals.KEY_USER_ID, userId);
+                            Intent intent = new Intent(getApplicationContext(), MainActivity.class);
+                            startActivity(intent);
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+                }
+        }
 
     }
 }
