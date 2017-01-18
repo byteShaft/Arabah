@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:background="@drawable/register_background">
+
+    <RelativeLayout
+        android:id="@+id/heading_layout"
+        android:background="#EA75BB"
+        android:layout_width="match_parent"
+        android:layout_height="60dp">
+
+        <TextView
+            android:textSize="20sp"
+            android:textColor="#FFFF"
+            android:text="Manage Profile"
+            android:gravity="center"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+    </RelativeLayout>
+
+    <ImageView
+        android:id="@+id/logo_image"
+        android:layout_marginTop="10dp"
+        android:layout_centerHorizontal="true"
+        android:layout_below="@+id/heading_layout"
+        android:background="@mipmap/main_logo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
+    <Switch
+        android:id="@+id/show_hide_switch"
+        android:layout_margin="10dp"
+        android:textSize="18sp"
+        android:gravity="center"
+        android:textColor="#EA75BB"
+        app:buttonTint="#EA75BB"
+        android:text="Show/Hide me from the map"
+        android:layout_centerHorizontal="true"
+        android:layout_below="@+id/logo_image"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <EditText
+        android:id="@+id/description_edit_text"
+        android:layout_width="230dp"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:textSize="15sp"
+        android:gravity="top"
+        android:lines="6"
+        android:layout_below="@+id/show_hide_switch"
+        android:layout_marginTop="5dp"
+        android:background="@drawable/edit_text_background"
+        android:hint="Describe what you provide..."
+        android:paddingLeft="10dp"
+        android:paddingTop="5dp"
+        android:textColorHint="#EA75BB" />
+    <Button
+        android:id="@+id/save_button"
+        android:layout_width="230dp"
+        android:layout_height="45dp"
+        android:layout_centerHorizontal="true"
+        android:layout_below="@+id/description_edit_text"
+        android:layout_marginTop="20dp"
+        android:background="@drawable/login_button_background"
+        android:gravity="center"
+        android:text="Save!"
+        android:textAllCaps="false"
+        android:textColor="#FFF"
+        android:textSize="15sp" />
+
+</RelativeLayout>

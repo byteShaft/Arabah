@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">Arabah</string>
+    <string name="title_activity_truck_finder">Map</string>
+    <string name="google_maps_key" templateMergeStrategy="preserve" translatable="false">
+       AIzaSyCnNtvOj-gofvvWIIFcLEU30k3CBREUWMQ
+    </string>
+</resources>
