@@ -41,6 +41,7 @@ public class TruckFinderActivity extends FragmentActivity implements OnMapReadyC
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setContentView(R.layout.activity_truck_finder);
+        overridePendingTransition(R.anim.anim_left_in, R.anim.anim_left_out);
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
