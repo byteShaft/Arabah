@@ -2,13 +2,16 @@ package byteshaft.com.arabah.accounts;
 
 import android.Manifest;
 import android.app.Activity;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
@@ -40,7 +43,8 @@ import byteshaft.com.arabah.utils.WebServiceHelpers;
  */
 
 public class RegisterActivity extends AppCompatActivity implements GoogleApiClient.ConnectionCallbacks,
-        GoogleApiClient.OnConnectionFailedListener, LocationListener, HttpRequest.OnReadyStateChangeListener, HttpRequest.OnErrorListener {
+        GoogleApiClient.OnConnectionFailedListener, LocationListener, HttpRequest.OnReadyStateChangeListener,
+        HttpRequest.OnErrorListener {
 
     private Button registerButton;
     private LocationRequest mLocationRequest;
@@ -68,6 +72,7 @@ public class RegisterActivity extends AppCompatActivity implements GoogleApiClie
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setContentView(R.layout.activity_register);
+        overridePendingTransition(R.anim.anim_left_in, R.anim.anim_left_out);
         mFoodTruckName = (EditText) findViewById(R.id.food_truck_name_edit_text);
         mEmailAddress = (EditText) findViewById(R.id.email_edit_text);
         mMobileNumber = (EditText) findViewById(R.id.mobile_edit_text);
@@ -77,12 +82,18 @@ public class RegisterActivity extends AppCompatActivity implements GoogleApiClie
         registerButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                buildGoogleApiClient();
-                mGoogleApiClient.connect();
-                validateEditText();
-//                startActivity(new Intent(getApplicationContext(), MainActivity.class));
+                if (validateEditText()) {
+                    buildGoogleApiClient();
+                    mGoogleApiClient.connect();
+                }
             }
         });
+    }
+
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+        overridePendingTransition(R.anim.anim_right_in, R.anim.anim_right_out);
     }
 
     private boolean validateEditText() {
@@ -178,26 +189,32 @@ public class RegisterActivity extends AppCompatActivity implements GoogleApiClie
         System.out.println(latitude + "lat");
         System.out.println(longitude + "long");
         System.out.println(mLocationString + "latlong");
+        registerUser(mFoodTrcuknameString, mPasswordString,
+                mEmailAddressString, mMobileNumberString, mDescriptionString, mLocationString);
 
     }
 
-    private void registerUser(String username, String password, String email, String phoneNumber) {
+    private void registerUser(String truckName, String password, String email, String phoneNumber,
+                              String description, String location) {
         request = new HttpRequest(getApplicationContext());
         request.setOnReadyStateChangeListener(this);
         request.setOnErrorListener(this);
         request.open("POST", String.format("%suser/register", AppGlobals.BASE_URL));
-        request.send(getRegisterData(username, password, email, phoneNumber));
-        WebServiceHelpers.showProgressDialog(RegisterActivity.this, "Registering User ");
+        request.send(getRegisterData(truckName, password, email, phoneNumber, description, location));
+        WebServiceHelpers.showProgressDialog(RegisterActivity.this, "Registering FoodTruck");
     }
 
 
-    private String getRegisterData(String username, String password, String email, String phoneNumner) {
+    private String getRegisterData(String truckName, String password, String email, String phoneNumber,
+                                   String description, String location) {
         JSONObject jsonObject = new JSONObject();
         try {
-            jsonObject.put("full_name", username);
-            jsonObject.put("email", email);
-            jsonObject.put("mobile_number", phoneNumner);
+            jsonObject.put("truck_name", truckName);
             jsonObject.put("password", password);
+            jsonObject.put("email", email);
+            jsonObject.put("mobile_number", phoneNumber);
+            jsonObject.put("description", description);
+            jsonObject.put("location", location);
         } catch (JSONException e) {
             e.printStackTrace();
         }
@@ -217,9 +234,9 @@ public class RegisterActivity extends AppCompatActivity implements GoogleApiClie
 
     @Override
     public void onReadyStateChange(HttpRequest request, int readyState) {
-
         switch (readyState) {
             case HttpRequest.STATE_DONE:
+                Log.i("TAG", "Url " + request.getResponseURL());
                 WebServiceHelpers.dismissProgressDialog();
                 Log.i("TAG", "Response " + request.getResponseText());
                 switch (request.getStatus()) {
@@ -231,23 +248,33 @@ public class RegisterActivity extends AppCompatActivity implements GoogleApiClie
                         break;
                     case HttpURLConnection.HTTP_CREATED:
                         System.out.println(request.getResponseText() + "working ");
-                        Toast.makeText(getApplicationContext(), "Activation code has been sent to you! Please check your Email", Toast.LENGTH_SHORT).show();
                         try {
                             JSONObject jsonObject = new JSONObject(request.getResponseText());
                             System.out.println(jsonObject + "working ");
-                            String username = jsonObject.getString(AppGlobals.KEY_FULL_NAME);
+                            String username = jsonObject.getString(AppGlobals.KEY_FOOD_TRUCK_NAME);
                             String userId = jsonObject.getString(AppGlobals.KEY_USER_ID);
                             String email = jsonObject.getString(AppGlobals.KEY_EMAIL);
                             String phoneNumber = jsonObject.getString(AppGlobals.KEY_PHONE_NUMBER);
+                            String description = jsonObject.getString(AppGlobals.KEY_Description);
                             //saving values
-                            AppGlobals.saveDataToSharedPreferences(AppGlobals.KEY_FULL_NAME, username);
-                            Log.i("user name", " " + AppGlobals.getStringFromSharedPreferences(AppGlobals.KEY_FULL_NAME));
+                            AppGlobals.saveDataToSharedPreferences(AppGlobals.KEY_FOOD_TRUCK_NAME, username);
+                            Log.i("user name", " " + AppGlobals.getStringFromSharedPreferences(AppGlobals.KEY_FOOD_TRUCK_NAME));
                             AppGlobals.saveDataToSharedPreferences(AppGlobals.KEY_EMAIL, email);
                             AppGlobals.saveDataToSharedPreferences(AppGlobals.KEY_PHONE_NUMBER, phoneNumber);
+                            AppGlobals.saveDataToSharedPreferences(AppGlobals.KEY_Description, description);
                             Log.i("user name", " " + AppGlobals.getStringFromSharedPreferences(AppGlobals.KEY_PHONE_NUMBER));
                             AppGlobals.saveDataToSharedPreferences(AppGlobals.KEY_USER_ID, userId);
-                            Intent intent = new Intent(getApplicationContext(), MainActivity.class);
-                            startActivity(intent);
+                            AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
+                            alertDialogBuilder.setTitle("Account Successfully Created!");
+                            alertDialogBuilder.setMessage("After admins approval you will receive an activation E-Mail").setCancelable(false).setPositiveButton("Ok",
+                                    new DialogInterface.OnClickListener() {
+                                        public void onClick(DialogInterface dialog, int id) {
+                                            startActivity(new Intent(getApplicationContext(), MainActivity.class));
+                                            finish();
+                                        }
+                                    });
+                            AlertDialog alertDialog = alertDialogBuilder.create();
+                            alertDialog.show();
                         } catch (JSONException e) {
                             e.printStackTrace();
                         }

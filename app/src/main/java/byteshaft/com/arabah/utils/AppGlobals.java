@@ -12,8 +12,10 @@ import android.support.v7.app.AlertDialog;
 public class AppGlobals extends Application {
 
     private static Context sContext;
-    public static final String KEY_FULL_NAME = "full_name";
+    public static final String KEY_FOOD_TRUCK_NAME = "truck_name";
     public static final String KEY_EMAIL = "email";
+    public static final String KEY_Description = "description";
+    public static final String KEY_USER_LOCATION= "location";
     public static final String KEY_USER_ID = "id";
     public static final String KEY_PHONE_NUMBER = "mobile_number";
     public static final String KEY_TOKEN = "token";
@@ -22,7 +24,7 @@ public class AppGlobals extends Application {
     public static int readresponseCode = 0;
     public static final String KEY_USER_DETAILS = "user_details";
     public static boolean logout = false;
-    public static final String BASE_URL = "http://46.101.27.152/api";
+    public static final String BASE_URL = "http://46.101.27.152/api/";
     public static boolean dialogCancel = false;
     public static Typeface typefaceBold;
     public static Typeface typefaceNormal;
@@ -31,8 +33,6 @@ public class AppGlobals extends Application {
     public void onCreate() {
         super.onCreate();
         sContext = getApplicationContext();
-        typefaceBold = Typeface.createFromAsset(getApplicationContext().getAssets(),"fonts/bold.ttf");
-        typefaceNormal = Typeface.createFromAsset(getApplicationContext().getAssets(),"fonts/normal.ttf");
     }
 
     public static Context getContext() {

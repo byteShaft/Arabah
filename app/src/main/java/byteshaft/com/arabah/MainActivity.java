@@ -10,7 +10,9 @@ import android.widget.Button;
 import android.widget.TextView;
 
 import byteshaft.com.arabah.accounts.LoginActivity;
+import byteshaft.com.arabah.accounts.ManageProfile;
 import byteshaft.com.arabah.accounts.RegisterActivity;
+import byteshaft.com.arabah.utils.AppGlobals;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener{
 
@@ -22,10 +24,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        if (AppGlobals.isUserLoggedIn()) {
+            startActivity(new Intent(getApplicationContext(), ManageProfile.class));
+        }
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setContentView(R.layout.activity_main);
+        overridePendingTransition(R.anim.anim_left_in, R.anim.anim_left_out);
         foodTruckOwneButton = (Button) findViewById(R.id.owner_button);
         userButton = (Button) findViewById(R.id.user_button);
         logintextView = (TextView) findViewById(R.id.login_textview);
@@ -49,5 +55,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 break;
         }
 
+    }
+
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+        finish();
+        overridePendingTransition(R.anim.anim_right_in, R.anim.anim_right_out);
     }
 }
