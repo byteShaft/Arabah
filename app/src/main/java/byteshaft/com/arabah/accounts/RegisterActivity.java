@@ -2,15 +2,19 @@ package byteshaft.com.arabah.accounts;
 
 import android.Manifest;
 import android.app.Activity;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Location;
+import android.location.LocationManager;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -64,6 +68,8 @@ public class RegisterActivity extends AppCompatActivity implements GoogleApiClie
     private String mLocationString;
 
     private HttpRequest request;
+    private static final int MY_PERMISSIONS_REQUEST_LOCATION = 0;
+    private static final int ENABLE_LOCATION = 1;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -82,12 +88,35 @@ public class RegisterActivity extends AppCompatActivity implements GoogleApiClie
         registerButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (validateEditText()) {
-                    buildGoogleApiClient();
-                    mGoogleApiClient.connect();
+                validateEditText();
+                if (ContextCompat.checkSelfPermission(RegisterActivity.this,
+                        Manifest.permission.ACCESS_FINE_LOCATION)
+                        != PackageManager.PERMISSION_GRANTED) {
+                    ActivityCompat.requestPermissions(RegisterActivity.this,
+                            new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                            MY_PERMISSIONS_REQUEST_LOCATION);
+                } else {
+                    if (locationEnabled()) {
+                        buildGoogleApiClient();
+                        mGoogleApiClient.connect();
+                    } else {
+                        notifyUser();
+                    }
                 }
+
             }
         });
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == ENABLE_LOCATION) {
+            if (locationEnabled()) {
+                buildGoogleApiClient();
+                mGoogleApiClient.connect();
+            }
+        }
     }
 
     @Override
@@ -142,6 +171,69 @@ public class RegisterActivity extends AppCompatActivity implements GoogleApiClie
             mEmailAddress.setError(null);
         }
         return valid;
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        switch (requestCode) {
+            case MY_PERMISSIONS_REQUEST_LOCATION: {
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    if (!locationEnabled()) {
+                        // notify user
+                        notifyUser();
+                    } else {
+                        if (ActivityCompat.checkSelfPermission(this,
+                                Manifest.permission.ACCESS_FINE_LOCATION)
+                                != PackageManager.PERMISSION_GRANTED &&
+                                ActivityCompat.checkSelfPermission(this,
+                                        Manifest.permission.ACCESS_COARSE_LOCATION)
+                                        != PackageManager.PERMISSION_GRANTED) {
+                            // TODO: Consider calling
+                            //    ActivityCompat#requestPermissions
+                            // here to request the missing permissions, and then overriding
+                            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                            //                                          int[] grantResults)
+                            // to handle the case where the user grants the permission. See the documentation
+                            // for ActivityCompat#requestPermissions for more details.
+                            return;
+                        }
+                        buildGoogleApiClient();
+                        mGoogleApiClient.connect();
+                    }
+
+                } else {
+                    Toast.makeText(this, "Permission denied!", Toast.LENGTH_SHORT).show();
+
+                }
+                return;
+            }
+        }
+    }
+
+    private void notifyUser() {
+        AlertDialog.Builder dialog = new AlertDialog.Builder(this);
+        dialog.setMessage("Location is not enabled");
+        dialog.setPositiveButton("Turn on", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface paramDialogInterface, int paramInt) {
+                // TODO Auto-generated method stub
+                Intent myIntent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+                startActivityForResult(myIntent, ENABLE_LOCATION);
+                //get gps
+            }
+        });
+        dialog.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+
+            @Override
+            public void onClick(DialogInterface paramDialogInterface, int paramInt) {
+                // TODO Auto-generated method stub
+
+            }
+        });
+        dialog.show();
     }
 
     protected synchronized void buildGoogleApiClient() {
@@ -202,6 +294,25 @@ public class RegisterActivity extends AppCompatActivity implements GoogleApiClie
         request.open("POST", String.format("%suser/register", AppGlobals.BASE_URL));
         request.send(getRegisterData(truckName, password, email, phoneNumber, description, location));
         WebServiceHelpers.showProgressDialog(RegisterActivity.this, "Registering FoodTruck");
+    }
+
+    public static boolean locationEnabled() {
+        LocationManager lm = (LocationManager) AppGlobals.getContext()
+                .getSystemService(Context.LOCATION_SERVICE);
+        boolean gps_enabled = false;
+        boolean network_enabled = false;
+
+        try {
+            gps_enabled = lm.isProviderEnabled(LocationManager.GPS_PROVIDER);
+        } catch (Exception ex) {
+        }
+
+        try {
+            network_enabled = lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
+        } catch (Exception ex) {
+        }
+
+        return gps_enabled || network_enabled;
     }
 
 
