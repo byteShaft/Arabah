@@ -27,11 +27,23 @@
             android:textSize="15sp"
             android:paddingRight="16dp"
             android:layout_centerVertical="true"
-            android:textColor="#83DDCC"
+            android:textColor="#FFFF"
             android:textAllCaps="false"
             android:text="Logout"
-            android:gravity="center|right"
-            android:layout_width="match_parent"
+            android:layout_alignParentRight="true"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+        <TextView
+            android:id="@+id/food_truck_map"
+            android:textSize="15sp"
+            android:paddingLeft="16dp"
+            android:layout_centerVertical="true"
+            android:textColor="#FFFF"
+            android:textAllCaps="false"
+            android:text="Map"
+            android:layout_alignParentLeft="true"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content" />
 
     </RelativeLayout>

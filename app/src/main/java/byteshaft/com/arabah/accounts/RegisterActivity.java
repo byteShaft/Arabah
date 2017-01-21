@@ -70,6 +70,8 @@ public class RegisterActivity extends AppCompatActivity implements GoogleApiClie
     private HttpRequest request;
     private static final int MY_PERMISSIONS_REQUEST_LOCATION = 0;
     private static final int ENABLE_LOCATION = 1;
+    private int locationCounter = 0;
+    private boolean locationAcquired = false;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -191,13 +193,6 @@ public class RegisterActivity extends AppCompatActivity implements GoogleApiClie
                                 ActivityCompat.checkSelfPermission(this,
                                         Manifest.permission.ACCESS_COARSE_LOCATION)
                                         != PackageManager.PERMISSION_GRANTED) {
-                            // TODO: Consider calling
-                            //    ActivityCompat#requestPermissions
-                            // here to request the missing permissions, and then overriding
-                            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-                            //                                          int[] grantResults)
-                            // to handle the case where the user grants the permission. See the documentation
-                            // for ActivityCompat#requestPermissions for more details.
                             return;
                         }
                         buildGoogleApiClient();
@@ -242,12 +237,19 @@ public class RegisterActivity extends AppCompatActivity implements GoogleApiClie
                 .addOnConnectionFailedListener(this)
                 .addApi(LocationServices.API)
                 .build();
+        WebServiceHelpers.showProgressDialog(RegisterActivity.this, "Registering FoodTruck");
+        new android.os.Handler().postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                if (!locationAcquired)
+                Toast.makeText(RegisterActivity.this, "cannot acquire location, please try again", Toast.LENGTH_SHORT).show();
+            }
+        }, 10000);
     }
 
     @Override
     public void onConnected(@Nullable Bundle bundle) {
         startLocationUpdates();
-
     }
 
     @Override
@@ -265,8 +267,8 @@ public class RegisterActivity extends AppCompatActivity implements GoogleApiClie
             return;
         }
         mLocationRequest = new LocationRequest();
-//        mLocationRequest.setInterval(INTERVAL);
-//        mLocationRequest.setFastestInterval(FASTEST_INTERVAL);
+        mLocationRequest.setInterval(INTERVAL);
+        mLocationRequest.setFastestInterval(FASTEST_INTERVAL);
         mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
         LocationServices.FusedLocationApi.requestLocationUpdates(
                 mGoogleApiClient, mLocationRequest, this);
@@ -281,9 +283,19 @@ public class RegisterActivity extends AppCompatActivity implements GoogleApiClie
         System.out.println(latitude + "lat");
         System.out.println(longitude + "long");
         System.out.println(mLocationString + "latlong");
-        registerUser(mFoodTrcuknameString, mPasswordString,
-                mEmailAddressString, mMobileNumberString, mDescriptionString, mLocationString);
+        locationCounter++;
+        if (locationCounter == 2) {
+            locationAcquired = true;
+            stopLocationService();
+            registerUser(mFoodTrcuknameString, mPasswordString,
+                    mEmailAddressString, mMobileNumberString, mDescriptionString, mLocationString);
+        }
+    }
 
+    public void stopLocationService() {
+        LocationServices.FusedLocationApi.removeLocationUpdates(
+                mGoogleApiClient, this);
+        mGoogleApiClient.disconnect();
     }
 
     private void registerUser(String truckName, String password, String email, String phoneNumber,
@@ -293,7 +305,7 @@ public class RegisterActivity extends AppCompatActivity implements GoogleApiClie
         request.setOnErrorListener(this);
         request.open("POST", String.format("%suser/register", AppGlobals.BASE_URL));
         request.send(getRegisterData(truckName, password, email, phoneNumber, description, location));
-        WebServiceHelpers.showProgressDialog(RegisterActivity.this, "Registering FoodTruck");
+
     }
 
     public static boolean locationEnabled() {

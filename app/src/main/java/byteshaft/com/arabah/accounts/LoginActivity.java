@@ -19,6 +19,7 @@ import org.json.JSONObject;
 
 import java.net.HttpURLConnection;
 
+import byteshaft.com.arabah.MainActivity;
 import byteshaft.com.arabah.R;
 import byteshaft.com.arabah.utils.AppGlobals;
 import byteshaft.com.arabah.utils.WebServiceHelpers;
@@ -31,14 +32,17 @@ public class LoginActivity extends AppCompatActivity implements View.OnClickList
         HttpRequest.OnReadyStateChangeListener, HttpRequest.OnErrorListener{
 
     private Button login_button;
-
     private EditText mEmailAddress;
     private EditText mPassword;
-
     private String mEmailAddressString;
     private String mPasswordString;
+    private static LoginActivity sInstance;
 
     private HttpRequest request;
+
+    public static LoginActivity getInstance() {
+        return sInstance;
+    }
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -47,6 +51,7 @@ public class LoginActivity extends AppCompatActivity implements View.OnClickList
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setContentView(R.layout.activity_login);
+        sInstance = this;
         overridePendingTransition(R.anim.anim_left_in, R.anim.anim_left_out);
         login_button = (Button) findViewById(R.id.login_button);
         mEmailAddress = (EditText) findViewById(R.id.email_edit_text);
@@ -143,7 +148,6 @@ public class LoginActivity extends AppCompatActivity implements View.OnClickList
                                 "wait for the activation Email and Try again");
                         break;
                     case HttpURLConnection.HTTP_OK:
-                        System.out.println(request.getResponseText() + "working ");
                         try {
                             JSONObject jsonObject = new JSONObject(request.getResponseText());
                             String username = jsonObject.getString(AppGlobals.KEY_FOOD_TRUCK_NAME);

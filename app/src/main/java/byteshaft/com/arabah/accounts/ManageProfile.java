@@ -1,10 +1,18 @@
 package byteshaft.com.arabah.accounts;
 
+import android.Manifest;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.location.LocationManager;
 import android.os.Bundle;
+import android.provider.Settings;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -17,12 +25,17 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.byteshaft.requests.HttpRequest;
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationServices;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.net.HttpURLConnection;
 
+import byteshaft.com.arabah.MainActivity;
 import byteshaft.com.arabah.R;
 import byteshaft.com.arabah.utils.AppGlobals;
 import byteshaft.com.arabah.utils.WebServiceHelpers;
@@ -32,14 +45,22 @@ import byteshaft.com.arabah.utils.WebServiceHelpers;
  */
 
 public class ManageProfile extends AppCompatActivity implements View.OnClickListener,
-        HttpRequest.OnReadyStateChangeListener, HttpRequest.OnErrorListener{
+        HttpRequest.OnReadyStateChangeListener, HttpRequest.OnErrorListener,
+        GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
 
     private TextView logOutTextView;
+    private TextView mapTextView;
     private Button saveButton;
 
     private EditText mDescription;
     private String mDescriptionString;
     private HttpRequest request;
+
+    private static final int MY_PERMISSIONS_REQUEST_LOCATION = 0;
+    private static final int ENABLE_LOCATION = 1;
+
+    private LocationRequest mLocationRequest;
+    private GoogleApiClient mGoogleApiClient;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -50,10 +71,15 @@ public class ManageProfile extends AppCompatActivity implements View.OnClickList
         setContentView(R.layout.activity_manage_profile);
         overridePendingTransition(R.anim.anim_left_in, R.anim.anim_left_out);
         logOutTextView = (TextView) findViewById(R.id.logout);
+        mapTextView = (TextView) findViewById(R.id.food_truck_map);
         saveButton = (Button) findViewById(R.id.save_button);
         mDescription = (EditText) findViewById(R.id.description_edit_text);
+
         logOutTextView.setOnClickListener(this);
+        mapTextView.setOnClickListener(this);
         saveButton.setOnClickListener(this);
+        mDescription.setText(AppGlobals.getStringFromSharedPreferences(AppGlobals.KEY_Description));
+        System.out.println(AppGlobals.getStringFromSharedPreferences(AppGlobals.KEY_Description + "working"));
     }
 
     @Override
@@ -83,11 +109,25 @@ public class ManageProfile extends AppCompatActivity implements View.OnClickList
                 AlertDialog alertDialog = alertDialogBuilder.create();
                 alertDialog.show();
                 break;
+
             case R.id.save_button:
                 mDescriptionString = mDescription.getText().toString();
                 System.out.println(mDescriptionString);
                 updateUserDescriptions(mDescriptionString);
                 mDescription.getText().clear();
+                break;
+
+            case R.id.food_truck_map:
+                System.out.println("working");
+                if (ContextCompat.checkSelfPermission(ManageProfile.this,
+                        Manifest.permission.ACCESS_FINE_LOCATION)
+                        != PackageManager.PERMISSION_GRANTED) {
+                    ActivityCompat.requestPermissions(ManageProfile.this,
+                            new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                            MY_PERMISSIONS_REQUEST_LOCATION);
+                } else {
+                    startActivity(new Intent(getApplicationContext(), FoodTruckMap.class));
+                }
                 break;
         }
 
@@ -161,7 +201,120 @@ public class ManageProfile extends AppCompatActivity implements View.OnClickList
     @Override
     public void onBackPressed() {
         super.onBackPressed();
+        if (AppGlobals.isUserLoggedIn()) {
+            MainActivity.getInstance().finish();
+        }
         finish();
         overridePendingTransition(R.anim.anim_right_in, R.anim.anim_right_out);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == ENABLE_LOCATION) {
+            if (locationEnabled()) {
+                startActivity(new Intent(getApplicationContext(), FoodTruckMap.class));
+            }
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        switch (requestCode) {
+            case MY_PERMISSIONS_REQUEST_LOCATION: {
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    if (!locationEnabled()) {
+                        // notify user
+                        notifyUser();
+                    } else {
+                        if (ActivityCompat.checkSelfPermission(this,
+                                Manifest.permission.ACCESS_FINE_LOCATION)
+                                != PackageManager.PERMISSION_GRANTED &&
+                                ActivityCompat.checkSelfPermission(this,
+                                        Manifest.permission.ACCESS_COARSE_LOCATION)
+                                        != PackageManager.PERMISSION_GRANTED) {
+                            return;
+
+                        }
+                        startActivity(new Intent(getApplicationContext(), FoodTruckMap.class));
+                        buildGoogleApiClient();
+                        mGoogleApiClient.connect();
+                    }
+
+                } else {
+                    Toast.makeText(this, "Permission denied!", Toast.LENGTH_SHORT).show();
+
+                }
+                return;
+            }
+        }
+    }
+
+    private void notifyUser() {
+        AlertDialog.Builder dialog = new AlertDialog.Builder(this);
+        dialog.setMessage("Location is not enabled");
+        dialog.setPositiveButton("Turn on", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface paramDialogInterface, int paramInt) {
+                // TODO Auto-generated method stub
+                Intent myIntent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+                startActivityForResult(myIntent, ENABLE_LOCATION);
+                //get gps
+            }
+        });
+        dialog.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+
+            @Override
+            public void onClick(DialogInterface paramDialogInterface, int paramInt) {
+                // TODO Auto-generated method stub
+
+            }
+        });
+        dialog.show();
+    }
+
+    protected synchronized void buildGoogleApiClient() {
+        mGoogleApiClient = new GoogleApiClient.Builder(this)
+                .addConnectionCallbacks(this)
+                .addOnConnectionFailedListener(this)
+                .addApi(LocationServices.API)
+                .build();
+    }
+
+    public static boolean locationEnabled() {
+        LocationManager lm = (LocationManager) AppGlobals.getContext()
+                .getSystemService(Context.LOCATION_SERVICE);
+        boolean gps_enabled = false;
+        boolean network_enabled = false;
+
+        try {
+            gps_enabled = lm.isProviderEnabled(LocationManager.GPS_PROVIDER);
+        } catch (Exception ex) {
+        }
+
+        try {
+            network_enabled = lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
+        } catch (Exception ex) {
+        }
+
+        return gps_enabled || network_enabled;
+    }
+
+    @Override
+    public void onConnected(@Nullable Bundle bundle) {
+
+    }
+
+    @Override
+    public void onConnectionSuspended(int i) {
+
+    }
+
+    @Override
+    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
+
     }
 }
