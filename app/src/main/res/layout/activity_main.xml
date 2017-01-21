@@ -56,7 +56,7 @@
             android:gravity="center"
             android:textColor="#EA75BB"
             android:textSize="17sp"
-            android:layout_marginTop="5dp"
+            android:layout_marginTop="6dp"
             android:text="Already have account?Login"
             android:layout_width="230dp"
             android:layout_height="wrap_content" />

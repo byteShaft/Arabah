@@ -21,9 +21,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private TextView logintextView;
 
+    private static MainActivity instance;
+
+    public static MainActivity getInstance() {
+        return instance;
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        instance = this;
         if (AppGlobals.isUserLoggedIn()) {
             startActivity(new Intent(getApplicationContext(), ManageProfile.class));
         }

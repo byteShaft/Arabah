@@ -27,6 +27,8 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity android:name=".accounts.FoodTruckMap"></activity>
         <activity android:name=".accounts.LoginActivity"></activity>
         <activity android:name=".accounts.RegisterActivity"></activity>
         <activity android:name=".accounts.ManageProfile">

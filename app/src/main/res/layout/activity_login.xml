@@ -24,6 +24,7 @@
             android:layout_height="45dp"
             android:layout_marginTop="30dp"
             android:background="@drawable/edit_text_background"
+            android:inputType="textEmailAddress"
             android:hint="Email"
             android:paddingLeft="10dp"
             android:textColorHint="#EA75BB" />
@@ -34,6 +35,7 @@
             android:layout_height="45dp"
             android:layout_below="@+id/email_edit_text"
             android:layout_marginTop="10dp"
+            android:inputType="textPassword"
             android:background="@drawable/edit_text_background"
             android:hint="Password"
             android:paddingLeft="10dp"
