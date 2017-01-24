@@ -20,6 +20,7 @@ public class AppGlobals extends Application {
     public static final String KEY_PHONE_NUMBER = "mobile_number";
     public static final String KEY_TOKEN = "token";
     public static final String KEY_USER_LOGIN = "user_login";
+    public static final String KEY_SHOW_HIDE_SWITCH = "show_hide_switch";
     public static int responseCode = 0;
     public static int readresponseCode = 0;
     public static final String KEY_USER_DETAILS = "user_details";
@@ -69,6 +70,16 @@ public class AppGlobals extends Application {
     public static boolean isUserLoggedIn() {
         SharedPreferences sharedPreferences = getPreferenceManager();
         return sharedPreferences.getBoolean(AppGlobals.KEY_USER_LOGIN, false);
+    }
+
+    public static void setSwitchOn(boolean value) {
+        SharedPreferences sharedPreferences = getPreferenceManager();
+        sharedPreferences.edit().putBoolean(AppGlobals.KEY_SHOW_HIDE_SWITCH, value).apply();
+    }
+
+    public static boolean isSwitchOn() {
+        SharedPreferences sharedPreferences = getPreferenceManager();
+        return sharedPreferences.getBoolean(AppGlobals.KEY_SHOW_HIDE_SWITCH, false);
     }
 
     public static void alertDialog(Activity activity, String title, String msg) {

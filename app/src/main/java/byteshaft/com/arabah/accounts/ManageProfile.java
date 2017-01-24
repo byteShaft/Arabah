@@ -20,7 +20,9 @@ import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.CompoundButton;
 import android.widget.EditText;
+import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -51,6 +53,7 @@ public class ManageProfile extends AppCompatActivity implements View.OnClickList
     private TextView logOutTextView;
     private TextView mapTextView;
     private Button saveButton;
+    private Switch showHideSwitch;
 
     private EditText mDescription;
     private String mDescriptionString;
@@ -73,13 +76,30 @@ public class ManageProfile extends AppCompatActivity implements View.OnClickList
         logOutTextView = (TextView) findViewById(R.id.logout);
         mapTextView = (TextView) findViewById(R.id.food_truck_map);
         saveButton = (Button) findViewById(R.id.save_button);
+        showHideSwitch = (Switch) findViewById(R.id.show_hide_switch);
         mDescription = (EditText) findViewById(R.id.description_edit_text);
 
         logOutTextView.setOnClickListener(this);
         mapTextView.setOnClickListener(this);
         saveButton.setOnClickListener(this);
+
         mDescription.setText(AppGlobals.getStringFromSharedPreferences(AppGlobals.KEY_Description));
-        System.out.println(AppGlobals.getStringFromSharedPreferences(AppGlobals.KEY_Description + "working"));
+        if (!AppGlobals.isSwitchOn()) {
+            showHideSwitch.setChecked(false);
+        } else {
+            showHideSwitch.setChecked(true);
+        }
+        showHideSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                System.out.println("working" + b);
+                if (showHideSwitch.isChecked()) {
+                    AppGlobals.setSwitchOn(b);
+                } else {
+                    AppGlobals.setSwitchOn(b);
+                }
+            }
+        });
     }
 
     @Override
@@ -126,7 +146,12 @@ public class ManageProfile extends AppCompatActivity implements View.OnClickList
                             new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
                             MY_PERMISSIONS_REQUEST_LOCATION);
                 } else {
-                    startActivity(new Intent(getApplicationContext(), FoodTruckMap.class));
+                    if (locationEnabled()) {
+                        startActivity(new Intent(getApplicationContext(), FoodTruckMap.class));
+                    } else {
+                        notifyUser();
+                    }
+
                 }
                 break;
         }

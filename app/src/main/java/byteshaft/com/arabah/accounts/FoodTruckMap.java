@@ -28,13 +28,9 @@ import byteshaft.com.arabah.utils.WebServiceHelpers;
 public class FoodTruckMap extends FragmentActivity implements OnMapReadyCallback {
 
     private GoogleMap mMap;
-    private LocationRequest mLocationRequest;
-    private GoogleApiClient mGoogleApiClient;
     private LatLng currentLatLngAuto;
     boolean cameraAnimatedToCurrentLocation;
     private MarkerOptions currLocationMarker;
-
-    private String mLocationString;
 
 
     @Override
