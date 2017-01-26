@@ -19,6 +19,7 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 
 import byteshaft.com.arabah.R;
+import byteshaft.com.arabah.utils.AppGlobals;
 import byteshaft.com.arabah.utils.WebServiceHelpers;
 
 /**
@@ -68,9 +69,10 @@ public class FoodTruckMap extends FragmentActivity implements OnMapReadyCallback
             WebServiceHelpers.dismissProgressDialog();
             currentLatLngAuto = new LatLng(location.getLatitude(), location.getLongitude());
             if (!cameraAnimatedToCurrentLocation) {
-                mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLatLngAuto, 15.0f));
-                currLocationMarker = new MarkerOptions().position(currentLatLngAuto).title("Arabah FoodTruck")
-                        .icon(BitmapDescriptorFactory.fromResource(R.mipmap.marker_logo));
+                mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLatLngAuto, 10.0f));
+                currLocationMarker = new MarkerOptions().position(currentLatLngAuto).title(
+                        AppGlobals.getStringFromSharedPreferences(AppGlobals.KEY_FOOD_TRUCK_NAME))
+                        .icon(BitmapDescriptorFactory.fromResource(R.mipmap.truck_marker));
                 mMap.addMarker(currLocationMarker).showInfoWindow();
                 cameraAnimatedToCurrentLocation = true;
             } else {
