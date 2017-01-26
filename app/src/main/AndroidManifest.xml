@@ -34,12 +34,12 @@
         <activity android:name=".accounts.ManageProfile">
 
         </activity>
+
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="@string/google_maps_key" />
-        <activity android:name=".TruckFinderActivity">
-
-        </activity>
+        <activity android:name=".TruckFinderActivity"></activity>
+        <service android:name=".utils.LocationService" android:enabled="true"/>
 
     </application>
 

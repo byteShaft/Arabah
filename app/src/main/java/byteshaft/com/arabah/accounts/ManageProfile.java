@@ -40,6 +40,7 @@ import java.net.HttpURLConnection;
 import byteshaft.com.arabah.MainActivity;
 import byteshaft.com.arabah.R;
 import byteshaft.com.arabah.utils.AppGlobals;
+import byteshaft.com.arabah.utils.LocationService;
 import byteshaft.com.arabah.utils.WebServiceHelpers;
 
 /**
@@ -47,8 +48,7 @@ import byteshaft.com.arabah.utils.WebServiceHelpers;
  */
 
 public class ManageProfile extends AppCompatActivity implements View.OnClickListener,
-        HttpRequest.OnReadyStateChangeListener, HttpRequest.OnErrorListener,
-        GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
+        HttpRequest.OnReadyStateChangeListener, HttpRequest.OnErrorListener {
 
     private TextView logOutTextView;
     private TextView mapTextView;
@@ -61,9 +61,8 @@ public class ManageProfile extends AppCompatActivity implements View.OnClickList
 
     private static final int MY_PERMISSIONS_REQUEST_LOCATION = 0;
     private static final int ENABLE_LOCATION = 1;
+    LocationService mLocationService;
 
-    private LocationRequest mLocationRequest;
-    private GoogleApiClient mGoogleApiClient;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -88,6 +87,7 @@ public class ManageProfile extends AppCompatActivity implements View.OnClickList
             showHideSwitch.setChecked(false);
         } else {
             showHideSwitch.setChecked(true);
+            startService(new Intent(getApplicationContext(), LocationService.class));
         }
         showHideSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
@@ -95,8 +95,13 @@ public class ManageProfile extends AppCompatActivity implements View.OnClickList
                 System.out.println("working" + b);
                 if (showHideSwitch.isChecked()) {
                     AppGlobals.setSwitchOn(b);
+                    startService(new Intent(getApplicationContext(), LocationService.class));
+                    Toast.makeText(getApplicationContext(), "Now use can see you on Map", Toast.LENGTH_LONG).show();
                 } else {
                     AppGlobals.setSwitchOn(b);
+                    stopService(new Intent(getApplicationContext(), LocationService.class));
+                    updateUserLocation();
+                    Toast.makeText(getApplicationContext(), "Now user can not see you on Map", Toast.LENGTH_LONG).show();
                 }
             }
         });
@@ -116,6 +121,10 @@ public class ManageProfile extends AppCompatActivity implements View.OnClickList
                                 editor.clear();
                                 editor.commit();
                                 AppGlobals.logout = true;
+                                if (showHideSwitch.isChecked()) {
+                                    AppGlobals.setSwitchOn(false);
+                                    stopService(new Intent(getApplicationContext(), LocationService.class));
+                                }
                                 startActivity(new Intent(getApplicationContext(), LoginActivity.class));
                                 finish();
                             }
@@ -160,6 +169,7 @@ public class ManageProfile extends AppCompatActivity implements View.OnClickList
 
     private void updateUserDescriptions(String description) {
         request = new HttpRequest(getApplicationContext());
+        request.setTimeout(3000);
         request.setOnReadyStateChangeListener(this);
         request.setOnErrorListener(this);
         request.open("PUT", "http://46.101.27.152/api/me");
@@ -167,6 +177,46 @@ public class ManageProfile extends AppCompatActivity implements View.OnClickList
                 AppGlobals.getStringFromSharedPreferences(AppGlobals.KEY_TOKEN));
         request.send(getUpdateUserData(description));
         WebServiceHelpers.showProgressDialog(ManageProfile.this, "Update Descriptions");
+    }
+
+    private void updateUserLocation() {
+        request = new HttpRequest(getApplicationContext());
+        request.setTimeout(3000);
+        request.setOnReadyStateChangeListener(new HttpRequest.OnReadyStateChangeListener() {
+            @Override
+            public void onReadyStateChange(HttpRequest request, int readyState) {
+                switch (readyState) {
+                    case HttpRequest.STATE_DONE:
+                        Log.i("TAG", "Url " + request.getResponseURL());
+                        WebServiceHelpers.dismissProgressDialog();
+                        switch (request.getStatus()) {
+                            case HttpRequest.ERROR_NETWORK_UNREACHABLE:
+                                AppGlobals.alertDialog(ManageProfile.this, "Update Failed!", "please check your internet connection");
+                                break;
+                            case HttpURLConnection.HTTP_OK:
+
+                                break;
+                        }
+                }
+            }
+        });
+        request.setOnErrorListener(this);
+        request.open("PUT", "http://46.101.27.152/api/me");
+        request.setRequestHeader("Authorization", "Token " +
+                AppGlobals.getStringFromSharedPreferences(AppGlobals.KEY_TOKEN));
+        request.send(getUpdateUserLocation());
+        WebServiceHelpers.showProgressDialog(ManageProfile.this, "Update Location");
+    }
+
+    private String getUpdateUserLocation() {
+        JSONObject jsonObject = new JSONObject();
+        try {
+            jsonObject.put("on_service", "false");
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        return jsonObject.toString();
+
     }
 
 
@@ -180,6 +230,7 @@ public class ManageProfile extends AppCompatActivity implements View.OnClickList
         return jsonObject.toString();
 
     }
+
 
     @Override
     public void onError(HttpRequest request, int readyState, short error, Exception exception) {
@@ -265,13 +316,10 @@ public class ManageProfile extends AppCompatActivity implements View.OnClickList
 
                         }
                         startActivity(new Intent(getApplicationContext(), FoodTruckMap.class));
-                        buildGoogleApiClient();
-                        mGoogleApiClient.connect();
                     }
 
                 } else {
                     Toast.makeText(this, "Permission denied!", Toast.LENGTH_SHORT).show();
-
                 }
                 return;
             }
@@ -301,14 +349,6 @@ public class ManageProfile extends AppCompatActivity implements View.OnClickList
         dialog.show();
     }
 
-    protected synchronized void buildGoogleApiClient() {
-        mGoogleApiClient = new GoogleApiClient.Builder(this)
-                .addConnectionCallbacks(this)
-                .addOnConnectionFailedListener(this)
-                .addApi(LocationServices.API)
-                .build();
-    }
-
     public static boolean locationEnabled() {
         LocationManager lm = (LocationManager) AppGlobals.getContext()
                 .getSystemService(Context.LOCATION_SERVICE);
@@ -318,6 +358,7 @@ public class ManageProfile extends AppCompatActivity implements View.OnClickList
         try {
             gps_enabled = lm.isProviderEnabled(LocationManager.GPS_PROVIDER);
         } catch (Exception ex) {
+
         }
 
         try {
@@ -326,20 +367,5 @@ public class ManageProfile extends AppCompatActivity implements View.OnClickList
         }
 
         return gps_enabled || network_enabled;
-    }
-
-    @Override
-    public void onConnected(@Nullable Bundle bundle) {
-
-    }
-
-    @Override
-    public void onConnectionSuspended(int i) {
-
-    }
-
-    @Override
-    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
-
     }
 }
