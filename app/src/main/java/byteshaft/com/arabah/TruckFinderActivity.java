@@ -55,6 +55,7 @@ public class TruckFinderActivity extends FragmentActivity implements OnMapReadyC
     private Marker currLocationMarker;
     private HttpRequest request;
     private TextView reFreshTextView;
+    private int zoomCounter = 0;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -93,11 +94,14 @@ public class TruckFinderActivity extends FragmentActivity implements OnMapReadyC
         public void onMyLocationChange(Location location) {
             if (location != null) {
                 Log.i("TAG", "location " + location.getLatitude());
-                CameraPosition cameraPosition = new CameraPosition.Builder()
-                        .target(new LatLng(location.getLatitude(), location.getLongitude()))
-                        .zoom(6).build();
-                mMap.animateCamera(CameraUpdateFactory
-                        .newCameraPosition(cameraPosition));
+                if (zoomCounter < 1) {
+                    CameraPosition cameraPosition = new CameraPosition.Builder()
+                            .target(new LatLng(location.getLatitude(), location.getLongitude()))
+                            .zoom(6).build();
+                    mMap.animateCamera(CameraUpdateFactory
+                            .newCameraPosition(cameraPosition));
+                }
+                zoomCounter++;
             }
 
         }
